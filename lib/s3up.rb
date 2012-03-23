@@ -39,8 +39,9 @@ class S3up
       max_threads = [config['threads_count'], (src_size.to_f / config['part_size']).ceil].min
       max_threads.times do |thread_number|
         upload_threads << (Thread.new do
-          while (read_size < src_size)
+          while true
             mutex.lock
+            break unless read_size < src_size
             buff = src_io.readpartial(config['part_size'])
             read_size += buff.size
             part_number = parts += 1

@@ -4,4 +4,5 @@ bucket_name: bucket-name
 # максимальное число потоков
 threads_count: 5
 # размер части, байт
-part_size: 524288
+# должно быть не меньше 5МБ!
+part_size: 5242880
