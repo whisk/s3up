@@ -3,7 +3,7 @@ $stdout.sync = true
 
 
 NUM = 10
-FILES = ['1k.dat', '64k.dat', '256k.dat', '512k.dat', '1m.dat', '10m.dat', '50m.dat']
+FILES = ARGV
 s3 = S3up.new('aws.yml')
 
 FILES.each do |filename|
