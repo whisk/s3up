@@ -17,7 +17,7 @@ s3 = S3up.new('aws.yml')
     NUM.times do |i|
       print '.'
       t0 = Time.now.to_f
-      s3.upload(filename, nil)
+      s3.send(method, filename, nil)
       t_total += Time.now.to_f - t0
     end
     print "\n"

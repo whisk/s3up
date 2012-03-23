@@ -3,9 +3,10 @@ require 'digest/md5'
 
 class S3up
   attr_reader :bucket
+  attr_accessor :config
 
   def initialize(config_path)
-    config = YAML.load_file(config_path)
+    @config = YAML.load_file(config_path)
     @bucket = AWS::S3.new(
       :access_key_id => config['access_key_id'],
       :secret_access_key => config['secret_access_key']).buckets[config['bucket_name']]
@@ -44,7 +45,7 @@ class S3up
             read_size += buff.size
             part_number = parts += 1
             mutex.unlock
-            
+
             upload.add_part :data => buff, :part_number => part_number
             uploaded_size += buff.size
 
