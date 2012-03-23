@@ -1,0 +1,7 @@
+access_key_id: KEY_ID_HERE
+secret_access_key: KEY_HERE
+bucket_name: bucket-name
+# максимальное число потоков
+threads_count: 5
+# размер части, байт
+part_size: 524288
