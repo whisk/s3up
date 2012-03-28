@@ -6,7 +6,8 @@ NUM = (ENV['NUM'] || 10).to_i
 FILES = ARGV
 s3 = S3up.new('aws.yml')
 
-methods = [:upload, :multipart_upload, :threaded_upload]
+#methods = [:upload, :multipart_upload, :threaded_upload]
+methods = [:threaded_upload]
 compare_with_method = :upload
 
 FILES.each do |filename|
@@ -19,7 +20,7 @@ FILES.each do |filename|
       print '.'
       methods.reverse.each do |method|
         t0 = Time.now.to_f
-        s3.send(method, filename, nil)
+        s3.send(method, filename)
         t_total[method] ||= 0.0
         t_total[method] += Time.now.to_f - t0
       end

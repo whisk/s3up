@@ -1,5 +1,4 @@
 require 'aws-sdk'
-require 'digest/md5'
 
 class S3up
   attr_reader :bucket
@@ -13,20 +12,19 @@ class S3up
   end
 
   # простая закачка
-  def upload(src, dst = nil, check_md5 = false)
+  def upload(src, dst = nil)
     dst ||= File.basename(src)
 
     s3_file = bucket.objects[dst]
     s3_file.write(:file => src, :acl => :public_read)
 
     raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(AWS::S3::S3Object)
-    do_check_md5(src, s3_file) if check_md5
 
     s3_file
   end
 
   # закачка частями
-  def multipart_upload(src, dst = nil, check_md5 = false)
+  def multipart_upload(src, dst = nil)
     dst ||= File.basename(src)
     s3_file = bucket.objects[dst]
 
@@ -59,7 +57,6 @@ class S3up
     src_io.close
 
     raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(AWS::S3::S3Object)
-    do_check_md5(src, s3_file) if check_md5
 
     s3_file
   end
@@ -118,16 +115,8 @@ class S3up
     src_io.close
 
     raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(AWS::S3::S3Object)
-    do_check_md5(src, s3_file) if check_md5
 
     s3_file
   end
 
-  private
-
-  def do_check_md5(file, s3_file)
-    local = Digest::MD5.hexdigest(File.read(file))
-    remote = s3_file.etag.gsub(/"/, '')
-    raise "S3: MD5 check failed (expected #{local}, was #{remote})" unless local == remote
-  end
 end
