@@ -1,8 +1,8 @@
 access_key_id: KEY_ID_HERE
 secret_access_key: KEY_HERE
+region: eu-central-1
 bucket_name: bucket-name
-# максимальное число потоков
 threads_count: 5
-# размер части, байт
-# должно быть не меньше 5МБ!
+
+# upload part size, bytes. MUST BE 5242880 (5M) or greater
 part_size: 5242880

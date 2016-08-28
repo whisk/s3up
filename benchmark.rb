@@ -1,13 +1,11 @@
-require 'lib/s3up.rb'
+require './lib/s3up.rb'
 $stdout.sync = true
-
 
 NUM = (ENV['NUM'] || 10).to_i
 FILES = ARGV
 s3 = S3up.new('aws.yml')
 
-#methods = [:upload, :multipart_upload, :threaded_upload]
-methods = [:threaded_upload]
+methods = [:upload, :multipart_upload, :threaded_upload]
 compare_with_method = :upload
 
 FILES.each do |filename|
@@ -27,7 +25,10 @@ FILES.each do |filename|
     end
   rescue Interrupt => e
     puts "Aborted by user"
-    exit
+    exit(1)
+  rescue Exception => e
+    puts "Error: #{e}"
+    exit(1)
   ensure
     print "\n"
     methods.each do |method|

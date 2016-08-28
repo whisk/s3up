@@ -1,32 +1,35 @@
 require 'aws-sdk'
+require 'yaml'
 
 class S3up
   attr_reader :bucket
-  attr_accessor :config
+  attr_accessor :config, :s3
 
   def initialize(config_path)
     @config = YAML.load_file(config_path)
-    @bucket = AWS::S3.new(
+    @s3 = Aws::S3::Client.new(
+      :region => config['region'],
       :access_key_id => config['access_key_id'],
-      :secret_access_key => config['secret_access_key']).buckets[config['bucket_name']]
+      :secret_access_key => config['secret_access_key'])
+    @bucket = Aws::S3::Bucket.new(config['bucket_name'], :client => s3)
   end
 
-  # простая закачка
+  # simple upload
   def upload(src, dst = nil)
     dst ||= File.basename(src)
 
-    s3_file = bucket.objects[dst]
-    s3_file.write(:file => src, :acl => :public_read)
+    s3_file = Aws::S3::Object.new(config['bucket_name'], dst, :client => s3)
+    s3_file.upload_file(src, :acl => 'public-read', :multipart_threshold => 2**32)
 
-    raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(AWS::S3::S3Object)
+    raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(Aws::S3::Object)
 
     s3_file
   end
 
-  # закачка частями
+  # multipart upload
   def multipart_upload(src, dst = nil)
     dst ||= File.basename(src)
-    s3_file = bucket.objects[dst]
+    s3_file = Aws::S3::Object.new(config['bucket_name'], dst, :client => s3)
 
     # открываем локальный src файл для чтения
     src_io = File.open(src, 'rb')
@@ -37,7 +40,8 @@ class S3up
     # размер файла пригодится
     src_size = File.size(src)
     # начинаем закачку частями
-    s3_file = s3_file.multipart_upload({:acl => :public_read}) do |upload|
+    upload = s3_file.initiate_multipart_upload(:acl => 'public-read')
+    upload.parts.each do |upload|
       while read_size < src_size
         # считаем последовательность байт заданного размера из файла в буфер
         buff = src_io.readpartial(config['part_size'])
@@ -56,22 +60,23 @@ class S3up
     # закроем исходный файл
     src_io.close
 
-    raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(AWS::S3::S3Object)
+    raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(Aws::S3::Object)
 
     s3_file
   end
 
-  # многопоточная закачка частями
+  # threaded multipart upload
   def threaded_upload(src, dst = nil, check_md5 = false)
     dst ||= File.basename(src)
-    s3_file = bucket.objects[dst]
-    
+    s3_file = Aws::S3::Object.new(config['bucket_name'], dst, :client => s3)
+
     src_io = File.open(src, 'rb')
     read_size = 0
     uploaded_size = 0
     parts = 0
     src_size = File.size(src)
-    s3_file = s3_file.multipart_upload({:acl => :public_read}) do |upload|
+    upload = s3_file.initiate_multipart_upload(:acl => 'public-read')
+    upload.parts.each do |upload|
       # заведем массив для сохранения информации о потоках
       upload_threads = []
       # создадим мьютекс (или семафор), чтобы избежать “гонок”
@@ -114,7 +119,7 @@ class S3up
     end
     src_io.close
 
-    raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(AWS::S3::S3Object)
+    raise "S3: Error uploading file '#{src}' -> '#{dst}" unless s3_file.instance_of?(Aws::S3::Object)
 
     s3_file
   end
